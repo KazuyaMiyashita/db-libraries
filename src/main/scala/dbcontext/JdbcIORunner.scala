@@ -3,8 +3,11 @@ package dbcontext
 import monix.eval.Task
 import monix.execution.Scheduler
 
+import scala.concurrent.Future
+
 trait JdbcIORunner {
   def run[A](io: JdbcIO[A]): Task[A]
+  def runToFuture[A](io: JdbcIO[A]): Future[A]
 }
 
 class DefaultJdbcIORunner(dbPool: JdbcConnectionPool)(implicit scheduler: Scheduler) extends JdbcIORunner {
@@ -12,6 +15,7 @@ class DefaultJdbcIORunner(dbPool: JdbcConnectionPool)(implicit scheduler: Schedu
   override def run[A](io: JdbcIO[A]): Task[A] = {
     for {
       connection <- dbPool.getConnection()
+      _          <- Task.eval(connection.setAutoCommit(false))
       result <- io
         .run(connection)
         .redeemWith(
@@ -20,5 +24,7 @@ class DefaultJdbcIORunner(dbPool: JdbcConnectionPool)(implicit scheduler: Schedu
         .guarantee(Task.eval(connection.close()))
     } yield result
   }
+
+  override def runToFuture[A](io: JdbcIO[A]): Future[A] = run(io).runToFuture
 
 }
