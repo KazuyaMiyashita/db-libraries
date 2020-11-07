@@ -2,19 +2,25 @@ package monixtest
 
 import monix.eval.Task
 
-object Runner {
+case class Runner(connectionName: String) {
 
   def run[A](io: IO[A]): Task[A] = {
-    val connection = new DummyConnection("connection2")
-    io.run(connection)
-      .redeemWith(
-        { e => connection.rollback(); Task.raiseError(e) }, { other: A => connection.commit(); Task.apply(other) }
-      )
-      .guarantee(Task.eval(connection.close()))
+
+    io match {
+      case PureIO(value) => Task.apply(value)
+      case ImpureIO(run) => {
+        val connection = new DummyConnection(connectionName)
+        run(connection)
+          .redeemWith(
+            { e => connection.rollback(); Task.raiseError(e) }, { other: A => connection.commit(); Task.apply(other) }
+          )
+          .guarantee(Task.eval(connection.close()))
+      }
+    }
   }
 
   def commitWhen[A, B](io: IO[A])(cond: A => Either[B, A]): Task[Either[B, A]] = {
-    val connection = new DummyConnection("connection2")
+    val connection = new DummyConnection(connectionName)
     io.run(connection)
       .redeemWith(
         { e => connection.rollback(); Task.raiseError(e) }, { result =>
