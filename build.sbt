@@ -14,6 +14,10 @@ lazy val commonSettings = Seq(
 lazy val root = (project in file("."))
   .settings(
     name := "db-libraries",
+
+    libraryDependencies += "org.typelevel" %% "cats-core" % "2.2.0",
+    libraryDependencies += "io.monix" %% "monix" % "3.2.2",
+
     libraryDependencies += "org.playframework.anorm" %% "anorm" % "2.6.7",
     libraryDependencies += "com.typesafe.slick" %% "slick" % "3.3.3",
     libraryDependencies += "org.scalikejdbc" %% "scalikejdbc" % "3.5.0",
