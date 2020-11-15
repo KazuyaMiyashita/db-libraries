@@ -15,7 +15,7 @@ object JdbcIO {
   def apply[A](a: => A): JdbcIO[A] = Kleisli(_ => IO(a))
 
   def withConnection[A](f: Connection => A): JdbcIO[A] =
-    Kleisli({ case (ds, _) => IO(f(ds.getConnection())) })
+    Kleisli({ case (c, _) => IO(f(c)) })
 
   def withAnorm[A](f: Connection => A): JdbcIO[A] = withConnection(f)
 
@@ -26,10 +26,10 @@ object JdbcIO {
   def withDoobie[A](cio: ConnectionIO[A]): JdbcIO[A] = {
     import doobie.implicits._
     Kleisli {
-      case (ds, ec) =>
+      case (c, ec) =>
         implicit val cs                = IO.contextShift(ec)
         val blocker                    = Blocker.liftExecutionContext(ec)
-        val transactor: Transactor[IO] = Transactor.fromConnection(ds.getConnection(), blocker)
+        val transactor: Transactor[IO] = Transactor.fromConnection(c, blocker)
         cio.transact(transactor)
     }
   }
@@ -38,15 +38,18 @@ object JdbcIO {
       io: slick.dbio.DBIOAction[A, slick.dbio.NoStream, slick.dbio.Effect.All]
   )(implicit ec: ExecutionContext): JdbcIO[A] =
     Kleisli {
-      case (ds, ec) =>
+      case (c, ec) =>
         implicit val cs = IO.contextShift(ec)
-        val source: JdbcDataSource =
-          new DataSourceJdbcDataSource(ds, keepAliveConnection = false, maxConnections = None)
+        val dummySource: JdbcDataSource = new JdbcDataSource {
+          override def createConnection(): Connection = c
+          override def close(): Unit                  = ()
+          override val maxConnections: Option[Int]    = None
+        }
         val asyncExecutor: AsyncExecutor = new AsyncExecutor {
           override def executionContext: ExecutionContext = ec
           override def close(): Unit                      = ()
         }
-        val db: JdbcBackend.Database = Database.forSource(source, asyncExecutor)
+        val db: JdbcBackend.Database = Database.forSource(dummySource, asyncExecutor)
         IO.fromFuture(IO(db.run(io)))
     }
 

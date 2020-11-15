@@ -17,7 +17,7 @@ class DefaultJdbcIORunner(dataSource: DataSource, ec: ExecutionContext) extends 
       connection <- IO(dataSource.getConnection())
       _          <- IO(connection.setAutoCommit(false))
       result <- io
-        .run((dataSource, ec))
+        .run((connection, ec))
         .redeemWith(
           { e => connection.rollback(); IO.raiseError(e) }, { other: A => connection.commit(); IO(other) }
         )
@@ -34,7 +34,7 @@ class TestRollbackJdbcIORunner(dataSource: DataSource, ec: ExecutionContext) ext
       connection <- IO(dataSource.getConnection())
       _          <- IO(connection.setAutoCommit(false))
       result <- io
-        .run((dataSource, ec))
+        .run((connection, ec))
         .redeemWith(
           { e => connection.rollback(); IO.raiseError(e) }, { other: A => connection.rollback(); IO(other) }
         )

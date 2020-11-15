@@ -4,10 +4,10 @@ import java.util.UUID
 import java.util.concurrent.Executors
 
 import javax.sql.DataSource
-import javax.naming.InitialContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.h2.jdbcx.JdbcDataSource
+import org.h2.tools.DeleteDbFiles
 
 import scala.concurrent.ExecutionContext
 
@@ -17,12 +17,10 @@ class JdbcIORunnerSpec2 extends AsyncFlatSpec with BeforeAndAfterAll {
 
   val dataSource: DataSource = {
     val ds = new JdbcDataSource()
-    ds.setUrl("jdbc:h2:~/test2")
+    ds.setUrl("jdbc:h2:./test2")
     ds.setUser("sa")
     ds.setPassword("")
-    val ctx = new InitialContext()
-    ctx.bind("jdbc/db2", ds)
-    ctx.lookup("jdbc/db2").asInstanceOf[DataSource]
+    ds
   }
 
   override def beforeAll() {
@@ -35,6 +33,8 @@ class JdbcIORunnerSpec2 extends AsyncFlatSpec with BeforeAndAfterAll {
     val c = dataSource.getConnection()
     val p = c.prepareStatement("drop table products;")
     p.executeUpdate()
+
+    DeleteDbFiles.execute("./", "test2", true)
   }
 
   case class Product(id: UUID, name: String, price: Int)
