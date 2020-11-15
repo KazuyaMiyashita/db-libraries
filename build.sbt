@@ -23,7 +23,8 @@ lazy val root = (project in file("."))
     libraryDependencies += "io.getquill"             %% "quill-jdbc" % "3.5.3",
     libraryDependencies += "mysql"                   % "mysql-connector-java" % "8.0.21",
     libraryDependencies += "com.h2database"          % "h2" % "1.4.200" % Test,
-    libraryDependencies += scalaTest                 % Test
+    libraryDependencies += scalaTest                 % Test,
+    libraryDependencies += mockito                   % Test
   )
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

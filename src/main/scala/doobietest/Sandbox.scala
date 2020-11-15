@@ -6,7 +6,6 @@ import cats.data.Kleisli
 import doobie._
 import doobie.implicits._
 import cats.effect.{Blocker, IO}
-import dbcontext.JdbcIO
 
 import scala.concurrent.ExecutionContext
 
@@ -29,11 +28,5 @@ object Sandbox {
   val a: IO[Option[Country]] = find("France").transact(xa)
 
   val b: Option[Country] = find("France").transact(xa).unsafeRunSync
-
-  def toJdbcIO[A](cio: ConnectionIO[A])(implicit ec: ExecutionContext): JdbcIO[A] =
-    JdbcIO.withConnection({ c: Connection =>
-      val transactor: Transactor[IO] = Transactor.fromConnection(c, Blocker.liftExecutionContext(ec))
-      cio.transact(transactor).unsafeRunSync
-    })
 
 }

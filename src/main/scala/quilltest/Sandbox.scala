@@ -8,8 +8,9 @@ import io.getquill.{NamingStrategy, _}
 import io.getquill.monad.Effect
 import javax.sql.DataSource
 import quilltest.Sandbox.ctx
-import dbcontext.JdbcIO
+import dbcontext2.JdbcIO
 import monix.eval.Task
+import cats.effect.{IO => CatsIO}
 
 object Sandbox {
 
@@ -36,9 +37,10 @@ object Sandbox {
   val ctx2                                  = new MysqlJdbcContext(SnakeCase, datasource)
 
   def withQuillMysql[A, N <: NamingStrategy](namingStrategy: N)(f: MysqlJdbcContext[N] => A): JdbcIO[A] =
-    Kleisli { c: Connection =>
-      val ctx = new MysqlJdbcContext(namingStrategy, datasource)
-      Task(ctx.transaction(f(ctx)))
+    Kleisli {
+      case (c, ec) =>
+        val ctx = new MysqlJdbcContext(namingStrategy, datasource)
+        CatsIO(ctx.transaction(f(ctx)))
     }
 
 }

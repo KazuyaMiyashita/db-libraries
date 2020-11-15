@@ -6,12 +6,13 @@ import cats.data.Kleisli
 import cats.effect.{Blocker, IO}
 import doobie.{ConnectionIO, Transactor}
 import slick.jdbc.JdbcBackend.Database
-import slick.jdbc.{DataSourceJdbcDataSource, JdbcBackend, JdbcDataSource}
+import slick.jdbc.{JdbcBackend, JdbcDataSource}
 import slick.util.AsyncExecutor
 
 import scala.concurrent.ExecutionContext
 
 object JdbcIO {
+
   def apply[A](a: => A): JdbcIO[A] = Kleisli(_ => IO(a))
 
   def withConnection[A](f: Connection => A): JdbcIO[A] =
