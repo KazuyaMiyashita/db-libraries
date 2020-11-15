@@ -6,6 +6,9 @@ import cats.data.Kleisli
 import cats.effect.{Blocker, IO}
 import doobie.{ConnectionIO, Transactor}
 import monix.eval.Task
+import slick.jdbc.JdbcBackend.Database
+import slick.jdbc.{JdbcBackend, JdbcDataSource}
+import slick.util.AsyncExecutor
 
 import scala.concurrent.ExecutionContext
 
@@ -29,4 +32,22 @@ object JdbcIO {
       cio.transact(transactor).unsafeRunSync
     })
   }
+
+  def withSlick[A](
+      io: slick.dbio.DBIOAction[A, slick.dbio.NoStream, slick.dbio.Effect.All]
+  )(implicit ec: ExecutionContext): JdbcIO[A] =
+    Kleisli { c: Connection =>
+      val dummySource: JdbcDataSource = new JdbcDataSource {
+        override def createConnection(): Connection = c
+        override def close(): Unit                  = ()
+        override val maxConnections: Option[Int]    = None
+      }
+      val asyncExecutor: AsyncExecutor = new AsyncExecutor {
+        override def executionContext: ExecutionContext = ec
+        override def close(): Unit                      = ()
+      }
+      val db: JdbcBackend.Database = Database.forSource(dummySource, asyncExecutor)
+      Task.deferFuture(db.run(io))
+    }
+
 }
