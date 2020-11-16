@@ -90,8 +90,7 @@ class JdbcIORunnerSpec2 extends AsyncFlatSpec with BeforeAndAfterAll {
       _   <- insertIO
       ps1 <- anormSelectIO
       ps2 <- scalikejdbcSelectIO
-//      ps3 <- doobieSelectIO
-      ps3 <- JdbcIO.apply(Nil)
+      ps3 <- doobieSelectIO
     } yield (ps1, ps2, ps3)
 
     val io2: JdbcIO[List[Product]] = JdbcIO.withScalikeJdbc { implicit s =>
@@ -105,7 +104,7 @@ class JdbcIORunnerSpec2 extends AsyncFlatSpec with BeforeAndAfterAll {
         case (ps1, ps2, ps3) =>
           assert(ps1 == products)
           assert(ps2 == products)
-//          assert(ps3 == products)
+          assert(ps3 == products)
       }
 
     for {
@@ -114,7 +113,7 @@ class JdbcIORunnerSpec2 extends AsyncFlatSpec with BeforeAndAfterAll {
     } yield {
       assert(res1._1 == products)
       assert(res1._2 == products)
-//      assert(res1._3 == products)
+      assert(res1._3 == products)
       assert(res2 == Nil)
     }
 

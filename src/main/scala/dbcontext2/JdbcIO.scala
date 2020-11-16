@@ -4,7 +4,7 @@ import java.sql.Connection
 
 import cats.data.Kleisli
 import cats.effect.{Blocker, IO}
-import doobie.{ConnectionIO, Transactor}
+import doobie.{ConnectionIO, KleisliInterpreter}
 import slick.jdbc.JdbcBackend.Database
 import slick.jdbc.{JdbcBackend, JdbcDataSource}
 import slick.util.AsyncExecutor
@@ -25,13 +25,13 @@ object JdbcIO {
   }
 
   def withDoobie[A](cio: ConnectionIO[A]): JdbcIO[A] = {
-    import doobie.implicits._
     Kleisli {
       case (c, ec) =>
-        implicit val cs                = IO.contextShift(ec)
-        val blocker                    = Blocker.liftExecutionContext(ec)
-        val transactor: Transactor[IO] = Transactor.fromConnection(c, blocker)
-        cio.transact(transactor)
+        implicit val cs                         = IO.contextShift(ec)
+        val blocker                             = Blocker.liftExecutionContext(ec)
+        val interpreter                         = KleisliInterpreter[IO](blocker).ConnectionInterpreter
+        val kleisli: Kleisli[IO, Connection, A] = cio.foldMap(interpreter)
+        kleisli.run(c)
     }
   }
 
