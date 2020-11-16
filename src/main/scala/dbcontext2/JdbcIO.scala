@@ -40,6 +40,7 @@ object JdbcIO {
   )(implicit ec: ExecutionContext): JdbcIO[A] =
     Kleisli {
       case (c, ec) =>
+        import slick.jdbc.MySQLProfile.api.{Database => _, _}
         implicit val cs = IO.contextShift(ec)
         val dummySource: JdbcDataSource = new JdbcDataSource {
           override def createConnection(): Connection = c
@@ -51,7 +52,7 @@ object JdbcIO {
           override def close(): Unit                      = ()
         }
         val db: JdbcBackend.Database = Database.forSource(dummySource, asyncExecutor)
-        IO.fromFuture(IO(db.run(io)))
+        IO.fromFuture(IO(db.run(io.transactionally.withPinnedSession)))
     }
 
 }

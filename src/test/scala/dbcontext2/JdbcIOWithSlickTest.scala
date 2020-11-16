@@ -36,20 +36,21 @@ class JdbcIOWithSlickTest extends AsyncFlatSpec {
 
     runner.runTx(io).unsafeToFuture().map { _ =>
       /* Slick */
-      verify(mockResultSet, times(1)).next()
-      verify(mockPreparedStatement, times(1)).executeQuery()
-      verify(mockConnection, times(1)).prepareStatement(anyString())
+//      verify(mockResultSet, times(1)).next()
+//      verify(mockPreparedStatement, times(1)).executeQuery()
+//      verify(mockConnection, times(1)).prepareStatement(anyString())
 
       verify(mockConnection, never).abort(any())
       verify(mockConnection, never).clearWarnings()
       verify(mockConnection, never).releaseSavepoint(any())
       verify(mockConnection, never).rollback()
       verify(mockConnection, never).rollback(any())
+      verify(mockConnection, never).setAutoCommit(true)
       verify(mockConnection, never).setReadOnly(any())
       verify(mockConnection, never).setTransactionIsolation(any())
 
       /* JdbcIORunner */
-      verify(mockConnection, times(1)).setAutoCommit(any())
+      verify(mockConnection, times(1)).setAutoCommit(false)
       verify(mockConnection, times(1)).close()
       verify(mockConnection, times(1)).commit()
 
